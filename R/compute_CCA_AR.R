@@ -2,7 +2,9 @@
 #'
 #' Function to perform Robust Sparse CCA  using alternating regressions from
 #' paper by Wilms, I. and Croux, C. (2016), "Robust sparse canonical correlation analysis"
+#'
 #' Implementation by Wilms, I.
+#'
 #'
 #' @param X                   An (nxp) data matrix.
 #' @param Y                   An (nxq) data matrix
