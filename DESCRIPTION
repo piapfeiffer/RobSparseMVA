@@ -1,0 +1,40 @@
+Package: RobSparseMVA
+Type: Package
+Title: Robust and Sparse Multivariate Analysis
+Version: 0.1.0
+Authors@R: c(
+    person("Pia ", "Pfeiffer", email = "pia.pfeiffer@tuwien.ac.at", role = c("aut", "cre")),
+    person("Peter", "Filzmoser", role = "aut"),
+    person("Ines", "Wilms", role = c("aut"),
+                            comment = "Robust Sparse CCA from a predictive point of view"))
+Maintainer: Pia Pfeiffer <pia.pfeiffer@tuwien.ac.at>
+Description: A package for robust and sparse multivariate methods for multivariate
+    high-dimensional analysis. An algorithm for canonical correlation analysis,
+    based on the method of multipliers and gradient descent, is implemented.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.3
+Imports: 
+    rlang,
+    ggplot2,
+    gridExtra,
+    grid,
+    rrcov,
+    robustbase,
+    torch,
+    ParBayesianOptimization,
+    BurStFin,
+    Matrix,
+    rstackdeque,
+    stats,
+    GSE,
+    SpatialNP,
+    rARPACK,
+    robustHD
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
