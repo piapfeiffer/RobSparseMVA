@@ -1,16 +1,30 @@
 citHeader("To cite RobSparseMVA in publications use:")
 
-citEntry(
-  entry    = "Article",
-  title    = ,
-  author   = ,
-  journal  = ,
-  year     = ,
-  volume   = ,
-  number   = ,
-  pages    = ,
-  url      = ,
-  textVersion = paste(
+bibentry(
+  key = "package",
+  bibtype    = "Manual",
+  title    = "RobSparseMVA: Robust and Sparse Multivariate Analysis",
+  author   = "Pia  Pfeiffer and Peter Filzmoser and Ines Wilms",
+  year     = "2023",
+  note     = "R package version 0.1.0"
+)
 
-  )
+bibentry(
+  key = "paper_MM",
+  bibtype    = "Article",
+  title    = "Efficient Computation of Sparse and Robust Maximum Association Estimators",
+  author   = "Pia Pfeiffer and Andreas Alfons and Peter Filzmoser",
+  journal = "Preprint",
+  year     = "2023+"
+)
+
+bibentry(
+  key = "paper_AR",
+  bibtype    = "Article",
+  title    = "Robust Sparse Canonical Correlation Analysis",
+  author   = "Wilms, Ines and Croux, Christophe",
+  journal  = "BMC Systems Biology",
+  year     = "2015",
+  volume   = "10",
+  url      = "10.1186/s12918-016-0317-9"
 )

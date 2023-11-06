@@ -77,3 +77,6 @@ it:               number of iterations
 Function to perform Robust Sparse CCA  using alternating regressions from
 paper by Wilms, I. and Croux, C. (2016), "Robust sparse canonical correlation analysis"
 }
+\details{
+Implementation by Wilms, I.
+}
