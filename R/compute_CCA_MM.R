@@ -79,6 +79,11 @@ ccaMM <- function(data_x, data_y,
 
   wt <- rep(NA, n)
 
+  if(any(is.na(penalties))){
+    penalties <- list(pen_x = rep(NA, k),
+                      pen_y = rep(NA, k))
+  }
+
   if (method == "Pearson") {
     C <- cov(cbind(data_x, data_y))
   } else if (method == "Spearman") {
@@ -116,18 +121,18 @@ ccaMM <- function(data_x, data_y,
   }
 
   for (i in 1:k) {
-    if (is.na(alpha_x[k])){
-      alpha_x[k] <- 0
+    if (is.na(alpha_x[i])){
+      alpha_x[i] <- 0
     }
     if (is.na(alpha_y[k])){
-      alpha_y[k] <- 0
+      alpha_y[i] <- 0
     }
 
-    if (all(c(alpha_x == 0 & alpha_y == 0))){
-      penalties <- list(pen_x = rep(sqrt(ncol(data_x)), k),
-                        pen_y = rep(sqrt(ncol(data_y)), k))
+    if (alpha_x[i] == 0 & alpha_y[i] == 0){
+      penalties$pen_x[i] <- sqrt(ncol(data_x))
+      penalties$pen_y[i] <- sqrt(ncol(data_y))
     }
-    if (any(is.na(penalties))) {
+    if (any(is.na(penalties$pen_x[i]), is.na(penalties$pen_y[i]))) {
       res_param <- bayesian_optimization_CCA(C, p, q, n,
         alpha_x,
         alpha_y,
