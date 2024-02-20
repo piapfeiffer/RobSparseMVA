@@ -11,9 +11,9 @@
 #'  D . Cor . D, where D is a diagonal matrix containing the column-wise mad.
 #' @param ... Additional parameters to be passed to the covariance estimators
 #' @param nearPD logical, use Matrix::nearPD() on estimated covariance matrix
-#' @param alpha_x (1xk) A positive real vector containing numbers between 0 and 1, indicating the elastic
+#' @param alpha_x (1xk) A positive real vector containing numbers between 0 (Ridge penalty) and 1 (LASSO penalty), indicating the elastic
 #'  net parameter for data_x for association of order k.
-#' @param alpha_y (1xk) A positive real vector containing numbers between 0 and 1, indicating the elastic
+#' @param alpha_y (1xk) A positive real vector containing numbers between 0 (Ridge penalty) and 1 (LASSO penalty), indicating the elastic
 #'  net parameter for data_y for association of order k.
 #' @param k highest order of maximum association you want to retrieve
 #' @param tol desired accuracy for inner loop
@@ -29,7 +29,7 @@
 #'  corresponding to data_x.
 #' @returns b A (qxk) vector of the estimated linear combinations
 #'  corresponding to data_y.
-#' @returns measure A (1xk) vector of the estimated maximum associations
+#' @returns `measure` A (1xk) vector of the estimated maximum associations
 #' @returns phi A (nxk) matrix of the estimated projections corresponding phi * data_x
 #' @returns eta A (nxk) matrix of the estimated projections corresponding eta * data_y
 #' @returns pen_x A (1xk) vector of the optimal penalty parameters for data_x
@@ -37,6 +37,7 @@
 #' @returns alpha_x The value of the elastic net parameter alpha_x
 #' @returns alpha_y The value of the elastic net parameter alpha_y
 #' @returns summary A summary of the hyperparameter optimization
+#' @returns `method` The method used for computing the covariance matrix.
 #' @export
 #' @importFrom stats cor
 #' @importFrom stats cov
@@ -59,6 +60,18 @@ ccaMM <- function(data_x, data_y,
                   penalties = NA) {
   if (nrow(data_x) != nrow(data_y)) rlang::abort("Dimensions of x and y do not match", class = "data_error")
   if (anyNA(data_x) | anyNA(data_y)) rlang::abort("Data contains NA", class = "data_error")
+
+  if (is.na(alpha_x)){
+    alpha_x <- rep(0, k)
+  }
+  if (is.na(alpha_y)){
+    alpha_y <- rep(0, k)
+  }
+
+  if (alpha_x == 0 & alpha_y == 0 & any(is.na(penalties))){
+    penalties <- list(pen_x = rep(sqrt(ncol(data_x)), k),
+                      pen_y = rep(sqrt(ncol(data_y)), k))
+  }
 
   A <- matrix(NA, nrow = ncol(data_x), ncol = k)
   B <- matrix(NA, nrow = ncol(data_y), ncol = k)
@@ -160,6 +173,7 @@ ccaMM <- function(data_x, data_y,
     phi = PHI, eta = ETA,
     pen_x = PEN_X, pen_y = PEN_Y,
     summary = SUMMARY,
+    method = method,
     cov = C,
     wt = wt,
     alpha_x = alpha_x, alpha_y = alpha_y

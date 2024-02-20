@@ -38,10 +38,10 @@ D . Cor . D, where D is a diagonal matrix containing the column-wise mad.}
 
 \item{nearPD}{logical, use Matrix::nearPD() on estimated covariance matrix}
 
-\item{alpha_x}{(1xk) A positive real vector containing numbers between 0 and 1, indicating the elastic
+\item{alpha_x}{(1xk) A positive real vector containing numbers between 0 (Ridge penalty) and 1 (LASSO penalty), indicating the elastic
 net parameter for data_x for association of order k.}
 
-\item{alpha_y}{(1xk) A positive real vector containing numbers between 0 and 1, indicating the elastic
+\item{alpha_y}{(1xk) A positive real vector containing numbers between 0 (Ridge penalty) and 1 (LASSO penalty), indicating the elastic
 net parameter for data_y for association of order k.}
 
 \item{k}{highest order of maximum association you want to retrieve}
@@ -69,7 +69,7 @@ a A (pxk) vector of the estimated linear combinations
 b A (qxk) vector of the estimated linear combinations
  corresponding to data_y.
 
-measure A (1xk) vector of the estimated maximum associations
+`measure` A (1xk) vector of the estimated maximum associations
 
 phi A (nxk) matrix of the estimated projections corresponding phi * data_x
 
@@ -84,6 +84,8 @@ alpha_x The value of the elastic net parameter alpha_x
 alpha_y The value of the elastic net parameter alpha_y
 
 summary A summary of the hyperparameter optimization
+
+`method` The method used for computing the covariance matrix.
 }
 \description{
 Compute CCA

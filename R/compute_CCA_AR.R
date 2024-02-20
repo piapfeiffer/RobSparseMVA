@@ -23,6 +23,8 @@
 #' @param lambdamode.start    mode argument sparseLTS function, inital sparse LTS fit
 #' @param lambdamode.final    mode argument sparseLTS function, final sparse LTS fit
 #'
+#' @references Wilms, I., & Croux, C. (2016). Robust sparse canonical correlation analysis. BMC systems biology, 10(1), 1-13.
+#'
 #' @returns ALPHA:            (pxr) estimated canonical vectors correpsonding to the first data set
 #' @returns BETA:             (qxr) estimated canonical vectors correpsonding to the second data set
 #' @returns cancors:          r estimated canonical correlations

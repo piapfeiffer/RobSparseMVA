@@ -80,3 +80,6 @@ paper by Wilms, I. and Croux, C. (2016), "Robust sparse canonical correlation an
 \details{
 Implementation by Wilms, I.
 }
+\references{
+Wilms, I., & Croux, C. (2016). Robust sparse canonical correlation analysis. BMC systems biology, 10(1), 1-13.
+}

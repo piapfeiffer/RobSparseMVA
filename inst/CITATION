@@ -22,9 +22,9 @@ bibentry(
   key = "paper_AR",
   bibtype    = "Article",
   title    = "Robust Sparse Canonical Correlation Analysis",
-  author   = "Wilms, Ines and Croux, Christophe",
+  author   = "Ines Wilms and Christophe Croux",
   journal  = "BMC Systems Biology",
   year     = "2015",
   volume   = "10",
-  url      = "10.1186/s12918-016-0317-9"
+  url      = "<doi:10.1186/s12918-016-0317-9>"
 )

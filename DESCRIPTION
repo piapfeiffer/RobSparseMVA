@@ -8,7 +8,7 @@ Authors@R: c(
     person("Ines", "Wilms", role = c("aut"),
                             comment = "Robust Sparse CCA from a predictive point of view"))
 Maintainer: Pia Pfeiffer <pia.pfeiffer@tuwien.ac.at>
-Description: A package for robust and sparse multivariate methods for multivariate
+Description: Robust and sparse multivariate methods for multivariate
     high-dimensional analysis. An algorithm for canonical correlation analysis,
     based on the method of multipliers and gradient descent, is implemented.
 License: MIT + file LICENSE
