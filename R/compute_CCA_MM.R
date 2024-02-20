@@ -61,18 +61,6 @@ ccaMM <- function(data_x, data_y,
   if (nrow(data_x) != nrow(data_y)) rlang::abort("Dimensions of x and y do not match", class = "data_error")
   if (anyNA(data_x) | anyNA(data_y)) rlang::abort("Data contains NA", class = "data_error")
 
-  if (any(is.na(alpha_x))){
-    alpha_x <- rep(0, k)
-  }
-  if (any(is.na(alpha_y))){
-    alpha_y <- rep(0, k)
-  }
-
-  if (any(c(alpha_x == 0 & alpha_y == 0, is.na(penalties)))){
-    penalties <- list(pen_x = rep(sqrt(ncol(data_x)), k),
-                      pen_y = rep(sqrt(ncol(data_y)), k))
-  }
-
   A <- matrix(NA, nrow = ncol(data_x), ncol = k)
   B <- matrix(NA, nrow = ncol(data_y), ncol = k)
   U <- matrix(NA, nrow = 2 * k + 2, ncol = k)
@@ -128,6 +116,17 @@ ccaMM <- function(data_x, data_y,
   }
 
   for (i in 1:k) {
+    if (is.na(alpha_x[k])){
+      alpha_x[k] <- 0
+    }
+    if (is.na(alpha_y[k])){
+      alpha_y[k] <- 0
+    }
+
+    if (all(c(alpha_x == 0 & alpha_y == 0), is.na(penalties))){
+      penalties <- list(pen_x = rep(sqrt(ncol(data_x)), k),
+                        pen_y = rep(sqrt(ncol(data_y)), k))
+    }
     if (any(is.na(penalties))) {
       res_param <- bayesian_optimization_CCA(C, p, q, n,
         alpha_x,
