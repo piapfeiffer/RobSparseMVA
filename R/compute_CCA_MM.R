@@ -61,10 +61,10 @@ ccaMM <- function(data_x, data_y,
   if (nrow(data_x) != nrow(data_y)) rlang::abort("Dimensions of x and y do not match", class = "data_error")
   if (anyNA(data_x) | anyNA(data_y)) rlang::abort("Data contains NA", class = "data_error")
 
-  if (is.na(alpha_x)){
+  if (any(is.na(alpha_x))){
     alpha_x <- rep(0, k)
   }
-  if (is.na(alpha_y)){
+  if (any(is.na(alpha_y))){
     alpha_y <- rep(0, k)
   }
 
