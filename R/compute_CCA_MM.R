@@ -123,7 +123,7 @@ ccaMM <- function(data_x, data_y,
       alpha_y[k] <- 0
     }
 
-    if (all(c(alpha_x == 0 & alpha_y == 0), is.na(penalties))){
+    if (all(c(alpha_x == 0 & alpha_y == 0))){
       penalties <- list(pen_x = rep(sqrt(ncol(data_x)), k),
                         pen_y = rep(sqrt(ncol(data_y)), k))
     }
