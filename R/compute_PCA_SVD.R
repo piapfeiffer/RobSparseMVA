@@ -11,8 +11,6 @@
 #'  has to be one of the following: "spearman", "wrapping"
 #' @param loss_type The selected type of loss function. Default is "L2", corresponding to a least
 #'  squares loss. The type has to be one of the following: "L2", "Huber", "Tukey", "LTS"
-#' @param h subset (only for loss_type = "LTS"), determines robustness, default h = 0.75
-#' @param ... Additional parameters to be passed to the transformations
 #' @param center logical: whether data should be centered before proceeding.
 #'  Default is "TRUE", using the median
 #'@param scale logical: whether data should be scaled before proceeding.
@@ -28,7 +26,7 @@
 #' @param penalties (optional) if given, no hyperparameter optimization is done,
 #' but the given penalty parameters are used.
 #' It has to be list structure, containing pen_x to be used for each loading
-#' @param init_ortho logical: whether initialization of second direction should be orthogonal projection, default = TRUE
+#' @param ... Additional parameters to be passed to the loss functions
 #' @returns An object of class "PCA_result" that contains following entries:
 #' @returns a A (pxk) vector of the estimated loadings
 #' @returns measure A (1xk) vector of the explained variance
@@ -44,30 +42,24 @@
 #' @importFrom stats rchisq
 #' @importFrom stats sd
 pcaSCRAMBLE <- function(data_x,
-                   groups = NA,
-                  transformation = "identity",
-                  loss_type = "L2",
-                  h = 0.75,
-                  ...,
-                  center = TRUE,
-                  scale = TRUE,
-                  alpha_x = NA,
-                  k = NA,
-                  tol = 1e-5,
-                  lr = 1e-3,
-                  epochs = 2000,
-                  lr_decay = 1,
-                  criterion = "TPO",
-                  bounds = c(1e-3, 10),
-                  penalties = NA) {
+                        groups = NA,
+                        transformation = "identity",
+                        loss_type = "L2",
+                        param = NA,
+                        center = TRUE,
+                        scale = TRUE,
+                        alpha_x = NA,
+                        k = NA,
+                        tol = 1e-5,
+                        lr = 1e-3,
+                        epochs = 2000,
+                        lr_decay = 1,
+                        criterion = "TPO",
+                        bounds = c(1e-3, 10),
+                        penalties = NA) {
 
   p <- ncol(data_x)
   n <- nrow(data_x)
-
-  if(k > p){
-    warning("k has to be <= min(p, n) ! k = min(p, n) is used")
-    k <- min(p, n)
-  }
 
   if(is.na(k)){
     # per default, compute best possible rank k approximation
@@ -75,6 +67,13 @@ pcaSCRAMBLE <- function(data_x,
     # smaller number for an initial result
     k <- min(p, n)
   }
+
+  if(k > p){
+    warning("k has to be <= min(p, n) ! k = min(p, n) is used")
+    k <- min(p, n)
+  }
+
+
   A <- matrix(NA, nrow = ncol(data_x), ncol = k)
   A_ortho <- matrix(NA, nrow = ncol(data_x), ncol = k)
   PHI <- matrix(NA, nrow = nrow(data_x), ncol = k)
@@ -169,7 +168,7 @@ pcaSCRAMBLE <- function(data_x,
       res_param <- bayesian_optimization_PCA_SVD(data_x, groups,
                                                  rsvd, n, p, k,
         alpha_x,
-        loss_type, h,
+        loss_type, param,
         tol, lr, epochs,
         lr_decay = lr_decay,
         bounds_input = bounds,
@@ -179,7 +178,7 @@ pcaSCRAMBLE <- function(data_x,
       PEN_X <- as.numeric(res_param$best_params)
 
       SUMMARY <- res_param$summary
-      GAUPRO <- res_param$proc
+      # GAUPRO <- res_param$proc
     } else {
       PEN_X <- penalties$pen_x
     }
@@ -191,7 +190,7 @@ pcaSCRAMBLE <- function(data_x,
                          PEN_X,
                          alpha_x,
                          loss_type,
-                         h,
+                         param,
                          tol,
                          lr,
                          epochs,
@@ -206,7 +205,7 @@ pcaSCRAMBLE <- function(data_x,
     S <- res$best_s
     LOSS <- res$plot_loss
 
-    tot_var <- sum(apply(data_x, 2, robustbase::Qn))
+    #tot_var <- sum(apply(data_x, 2, robustbase::Qn))
 
     CORR <- res$best_measure
     CORR_ortho <- res$best_measure_ortho
@@ -258,11 +257,12 @@ pcaSCRAMBLE <- function(data_x,
     loss = LOSS,
     measure = as.numeric(CORR)[order(CORR, decreasing = TRUE)],
     measure_ortho = as.numeric(CORR_ortho)[order(CORR_ortho, decreasing = TRUE)],
-    explained_var = as.numeric(CORR)[order(CORR, decreasing = TRUE)] / tot_var,
+    #explained_var = as.numeric(CORR)[order(CORR, decreasing = TRUE)] / tot_var,
+    explained_var = cumsum(as.numeric(CORR_ortho)[order(CORR_ortho, decreasing = TRUE)]) / sum(as.numeric(CORR_ortho)[order(CORR_ortho, decreasing = TRUE)]),
     phi = PHI,
     pen_x = PEN_X[order(CORR, decreasing = TRUE)],
     summary = SUMMARY,
-    gauproc = GAUPRO,
+    #gauproc = GAUPRO,
     wt = wt,
     robscale = robscale,
     robcenter = robcenter,
@@ -270,18 +270,27 @@ pcaSCRAMBLE <- function(data_x,
   ), class = "PCA_result"))
 }
 
-#' Plot CCA
-#' Function to plot summary of CCA computation and hyperparameter optimization
-#' @param x object of class CCA_result
+#' Plot PCA
+#' Function to plot summary of PCA computation and hyperparameter optimization
+#' @param x object of class PCA_result
 #' @param ... additional parameters to be passed to ggplot2
 #' @export
 plot.PCA_result <- function(x, ...) {
   par(mfrow=c(1,2))
+  # explained variance
   ev <- round(x$explained_var, 2)
-  barplot(ev, xlab = "# PC", ylab = "Explained Variance (Qn)")
-  barplot(cumsum(ev),
-          xlab = "# PC", ylab = "Explained Variance (Qn)",
-          ylim= c(0,1.1))
-  text(1:length(ev), 1, labels = as.character(cumsum(ev)))
+  barplot(ev, xlab = "# PC", ylab = "Proportion of explained variance")
+  plot(x$measure_ortho, xlab = "# PC", ylab = "Variances", type = "b", lty = 2, pch = 1)
+  plot(x$phi[,1], x$phi[,2], xlab = "PC 1", ylab = "PC2", type = "p", pch = 1)
+  diagplot(...,x)
+  par(mfrow=c(1,3))
+  plot(x$loss, type = "l", xlab = "Epoch", ylab = "Loss")
+  if(length(x$summary) != 0){
+    plot(sort(x$summary$pen_x), x$summary$Pred[order(x$summary$pen_x)], type = "l", xlab = "pen_x", ylab = "Total variance")
+    abline(v = x$pen_x[1], lty = 2, col = "red")
+    plot(sort(x$summary$pen_x), x$summary$Sparse_x[order(x$summary$pen_x)], type = "l", xlab = "pen_x", ylab = "Sparsity")
+    abline(v = x$pen_x[1], lty = 2, col = "red")
+  }
   par(mfrow=c(1,1))
-}
+  }
+
