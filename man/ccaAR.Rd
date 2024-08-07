@@ -80,6 +80,42 @@ paper by Wilms, I. and Croux, C. (2016), "Robust sparse canonical correlation an
 \details{
 Implementation by Wilms, I.
 }
+\examples{
+\dontrun{
+set.seed(123)
+library(mvtnorm) # only needed for simulated example
+p <- 10
+q <- 10
+n <- 100
+
+cov_xx <- matrix(0, ncol = p, nrow = p)
+cov_yy <- matrix(0, ncol = q, nrow = q)
+cov_xy <- matrix(0, nrow = p, ncol = q)
+
+diag(cov_xx) <- 1
+diag(cov_yy) <- 1
+cov_xy <- matrix(0, nrow = p, ncol = q)
+cov_xy[1, 1] <- 0.9
+cov_xy[2, 2] <- 0.7
+
+sigma <- rbind(
+  cbind(cov_xx, cov_xy),
+  cbind(Matrix::t(cov_xy), cov_yy)
+)
+
+data <- mvtnorm::rmvnorm(floor(n),
+                         mean = rep(0, p + q),
+                         sigma = sigma, checkSymmetry = F
+)
+
+x <-  as.matrix(data[, 1:p])
+y <-  as.matrix(data[, (p + 1):(p + q)])
+res <- ccaAR(x, y, rank = rank,
+             lambdaAseq=seq(from=10^-2,to=10^-3,length=10),
+             lambdaBseq=seq(from=10^-2,to=10^-3,length=10))
+}
+
+}
 \references{
 Wilms, I., & Croux, C. (2016). Robust sparse canonical correlation analysis. BMC systems biology, 10(1), 1-13.
 }

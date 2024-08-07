@@ -4,7 +4,7 @@
 \alias{higher_order}
 \title{Higher order constraint for robust and sparse PCA / CCA}
 \usage{
-higher_order(z, low_z, C)
+higher_order(z, low_z, C = NULL)
 }
 \arguments{
 \item{z}{A (1xp) torch::torch_tensor}

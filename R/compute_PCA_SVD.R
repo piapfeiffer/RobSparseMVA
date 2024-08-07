@@ -34,6 +34,39 @@
 #' @returns pen_x A (1xk) vector of the optimal penalty parameters for data_x
 #' @returns alpha_x The value of the elastic net parameter alpha_x
 #' @returns summary A summary of the hyperparameter optimization
+#' @examples
+#'\dontrun{
+#' p <- 100
+#' n <- 50
+#' R <- matrix(0, ncol = p, nrow = p)
+#' R[1:4, 1:4] <- 0.9
+#' R[5:8, 5:8] <- 0.5
+#' diag(R) <- 1
+#' V <- diag(c(100, 100, 100, 100, 25, 25, 25, 25, rep(4, p - 8)))
+#' C <- sqrt(V) %*% R %*% sqrt(V)
+#'
+#' set.seed(1)
+#' data <- mvtnorm::rmvnorm(floor(n),
+#'                          mean = rep(0, p),
+#'                          sigma = C)
+#'
+#' res_scramble <- pcaSCRAMBLE(data_x = data,
+#'                             groups = NA,
+#'                             transformation = "identity",
+#'                             loss_type = "L2",
+#'                             param = NA,
+#'                             center = TRUE,
+#'                             scale = TRUE,
+#'                             alpha_x = 0,
+#'                             k = 2,
+#'                             tol = 1e-5,
+#'                             lr = 1e-3,
+#'                             epochs = 2000,
+#'                             lr_decay = 0.99,
+#'                             criterion = "TPO",
+#'                             bounds = c(1e-3, 10),
+#'                             penalties = NA)
+#'}
 #' @export
 #' @importFrom stats cor
 #' @importFrom stats cov
@@ -41,6 +74,9 @@
 #' @importFrom stats median
 #' @importFrom stats rchisq
 #' @importFrom stats sd
+#' @importFrom graphics abline
+#' @importFrom graphics barplot
+#' @importFrom graphics par
 pcaSCRAMBLE <- function(data_x,
                         groups = NA,
                         transformation = "identity",

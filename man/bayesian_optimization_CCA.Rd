@@ -2,7 +2,7 @@
 % Please edit documentation in R/hp_optim_MM.R
 \name{bayesian_optimization_CCA}
 \alias{bayesian_optimization_CCA}
-\title{Bayesian Hyperparameter optimization
+\title{Bayesian Hyperparameter optimization for CCA
 Get optimal penalties using bayesian optimization.
 Score function depends on whether sparsity is assumed or not}
 \usage{
@@ -65,7 +65,7 @@ a list object containing the optimal hyperparameters and a summary
 of the optimization process
 }
 \description{
-Bayesian Hyperparameter optimization
+Bayesian Hyperparameter optimization for CCA
 Get optimal penalties using bayesian optimization.
 Score function depends on whether sparsity is assumed or not
 }

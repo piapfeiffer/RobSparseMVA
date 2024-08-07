@@ -38,10 +38,10 @@ D . Cor . D, where D is a diagonal matrix containing the column-wise mad.}
 
 \item{nearPD}{logical, use Matrix::nearPD() on estimated covariance matrix}
 
-\item{alpha_x}{(1xk) A positive real vector containing numbers between 0 (Ridge penalty) and 1 (LASSO penalty), indicating the elastic
+\item{alpha_x}{(1xk) A positive real vector containing numbers between 0 and 1, indicating the elastic
 net parameter for data_x for association of order k.}
 
-\item{alpha_y}{(1xk) A positive real vector containing numbers between 0 (Ridge penalty) and 1 (LASSO penalty), indicating the elastic
+\item{alpha_y}{(1xk) A positive real vector containing numbers between 0 and 1, indicating the elastic
 net parameter for data_y for association of order k.}
 
 \item{k}{highest order of maximum association you want to retrieve}
@@ -69,11 +69,11 @@ a A (pxk) vector of the estimated linear combinations
 b A (qxk) vector of the estimated linear combinations
  corresponding to data_y.
 
-`measure` A (1xk) vector of the estimated maximum associations
+measure A (1xk) vector of the estimated maximum associations
 
-phi A (nxk) matrix of the estimated projections corresponding phi * data_x
+phi A (nxk) matrix of the estimated projections corresponding a * data_x
 
-eta A (nxk) matrix of the estimated projections corresponding eta * data_y
+eta A (nxk) matrix of the estimated projections corresponding b * data_y
 
 pen_x A (1xk) vector of the optimal penalty parameters for data_x
 
@@ -84,10 +84,46 @@ alpha_x The value of the elastic net parameter alpha_x
 alpha_y The value of the elastic net parameter alpha_y
 
 summary A summary of the hyperparameter optimization
-
-`method` The method used for computing the covariance matrix.
 }
 \description{
 Compute CCA
 Function to compute CCA using combination of MM algorithm and Gradient Descent.
+}
+\examples{
+\dontrun{
+set.seed(123)
+library(mvtnorm) # only needed for simulated example
+p <- 10
+q <- 10
+n <- 100
+
+cov_xx <- matrix(0, ncol = p, nrow = p)
+cov_yy <- matrix(0, ncol = q, nrow = q)
+cov_xy <- matrix(0, nrow = p, ncol = q)
+
+diag(cov_xx) <- 1
+diag(cov_yy) <- 1
+cov_xy <- matrix(0, nrow = p, ncol = q)
+cov_xy[1, 1] <- 0.9
+cov_xy[2, 2] <- 0.7
+
+sigma <- rbind(
+  cbind(cov_xx, cov_xy),
+  cbind(Matrix::t(cov_xy), cov_yy)
+)
+
+data <- mvtnorm::rmvnorm(floor(n),
+                         mean = rep(0, p + q),
+                         sigma = sigma, checkSymmetry = F
+)
+
+x <-  as.matrix(data[, 1:p])
+y <-  as.matrix(data[, (p + 1):(p + q)])
+n_dir <- 2 # we want to derive the first two directions
+res <- ccaMM(x, y,
+                    k = n_dir,
+                    alpha_x = rep(0, n_dir),
+                    alpha_y = rep(0, n_dir))
+plot(res$a[,1], type = "l")
+}
 }

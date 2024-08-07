@@ -24,6 +24,7 @@
 #' @param init_ortho logical
 #' @export
 #' @importFrom utils head
+#' @importFrom stats na.omit
 train_CCA <- function(C, p, q,
                       pen_x, pen_y, order,
                       alpha_x, alpha_y,
@@ -47,6 +48,13 @@ train_CCA <- function(C, p, q,
   diff <- 1e16
   threshold_a <- 0
   threshold_b <- 0
+
+  conv_a <- matrix(NA, nrow = epochs * outer_epochs, ncol = p+2)
+  conv_b <- matrix(NA, nrow = epochs * outer_epochs, ncol = q+2)
+  count_update <- 0
+  conv_list <- data.frame(rho = NA,
+                          epoch_outer = NA, loss_outer = NA,
+                          epoch = NA, loss_inner = NA)
 
   while (as.numeric(diff) > tol && outer_count < outer_epochs) {
     old_loss_outer <- loss_outer
@@ -84,6 +92,7 @@ train_CCA <- function(C, p, q,
 
     lr <- lr
     optimizer <- torch::optim_adam(model$parameters, lr = lr, amsgrad = TRUE)
+    # optimizer <- torch::optim_sgd(model$parameters, lr = lr)
     lmbda <- function(epoch) lr_decay
     scheduler <- torch::lr_multiplicative(optimizer, lr_lambda = lmbda)
 
@@ -98,10 +107,11 @@ train_CCA <- function(C, p, q,
       loss <- model(rho, C)
       if(is.na(as.numeric(loss))){
         print(as.numeric(loss))
-        print(as.numeric(model$a))
-        print(as.numeric(model$b))
       }
-
+      conv_a[count_update+1,3:(p+2)] <- as.numeric(model$a)
+      conv_b[count_update+1,3:(q+2)] <- as.numeric(model$b)
+      conv_a[count_update+1,1:2] <- conv_b[count_update+1,1:2] <- c(count_ep, outer_count)
+      count_update <- count_update + 1
 
       if (as.numeric(loss) < best_loss) {
         best_loss <- as.numeric(loss)
@@ -144,6 +154,8 @@ train_CCA <- function(C, p, q,
 
       old_loss <- loss
 
+      conv_list <- rbind(conv_list, c(rho, outer_count +1, loss_outer[outer_count+1], count_ep + 1, as.numeric(loss)))
+
     } # end inner loop
 
       threshold_a <- mean(as.numeric(as.list(head(diff_log_a, 10)))) + 2 * sd(as.numeric(as.list(head(diff_log_a, 10))))
@@ -176,6 +188,12 @@ train_CCA <- function(C, p, q,
                                    best_b,
                                    C)
 
+    conv_a[count_update+1,3:(p+2)] <- best_a
+    conv_b[count_update+1,3:(q+2)] <- best_b
+    conv_a[count_update+1,1:2] <- conv_b[count_update+1,1:2] <- c(count_ep, outer_count)
+    count_update <- count_update + 1
+
+
     torch::with_no_grad({
     if (order > 1){
       model$u <- model$u + rho * torch::torch_stack(c(constraint_fun(torch::torch_tensor(best_a), C[1:p, 1:p]),
@@ -204,6 +222,8 @@ train_CCA <- function(C, p, q,
     loss_outer[outer_count + 2] <- as.numeric(outer_change)
     diff <- loss_outer[outer_count + 1] - loss_outer[outer_count + 2]
     outer_count <- outer_count + 1
+
+    conv_list <- rbind(conv_list, c(rho, outer_count +1, loss_outer[outer_count+2], count_ep + 1, as.numeric(loss)))
   }
 
 
@@ -220,12 +240,45 @@ train_CCA <- function(C, p, q,
         } else {
           best_measure <- 0
         }
+    }
+
+  best_model <- model_CCA(C, p, q,
+                     pen_x = pen_x,
+                     pen_y = pen_y,
+                     order = order,
+                     alpha_x = alpha_x,
+                     alpha_y = alpha_y,
+                     rho = rho,
+                     warm_a = best_a,
+                     warm_b = best_b,
+                     warm_u = best_u,
+                     low_a = low_a,
+                     low_b = low_b,
+                     init_ortho = init_ortho)
+  best_loss <- best_model(0, C)
+  grads <- torch::autograd_grad(best_loss, best_model$parameters, retain_graph = TRUE, create_graph = TRUE)
+
+  flattened_grads <- torch::torch_cat(grads)
+
+  hessian <- torch::torch_zeros(flattened_grads$shape[1], flattened_grads$shape[1])
+
+  s_vectors <- pracma::nullspace(t(as.matrix(flattened_grads)))
+
+  for (i in 1:flattened_grads$shape[1]){
+    second_der <- torch::autograd_grad(flattened_grads[i], best_model$parameters, retain_graph = TRUE, create_graph = TRUE)
+    second_der <- torch::torch_cat(second_der)
+    hessian[,i] <- second_der[,1]
   }
 
   return(list(best_measure = best_measure,
               best_loss = best_loss,
               best_a = best_a,
               best_b = best_b,
-              best_u = best_u
+              best_u = best_u,
+              hessian = as.matrix(hessian),
+              best_s = s_vectors,
+              conv_list = conv_list,
+              conv_a = conv_a,
+              conv_b = conv_b
   ))
 }

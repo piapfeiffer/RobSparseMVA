@@ -14,6 +14,7 @@
 #' @param warm_s A  scalar of the currently best singular value
 #' @param warm_m A vector of the currently best multiplier values
 #' @param low_u A (px(k-1)) matrix of lower order linear combinations
+
 model_PCA_SVD <- torch::nn_module(
   initialize = function(X,
                         groups,

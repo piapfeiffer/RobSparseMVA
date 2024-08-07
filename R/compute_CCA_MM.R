@@ -11,9 +11,9 @@
 #'  D . Cor . D, where D is a diagonal matrix containing the column-wise mad.
 #' @param ... Additional parameters to be passed to the covariance estimators
 #' @param nearPD logical, use Matrix::nearPD() on estimated covariance matrix
-#' @param alpha_x (1xk) A positive real vector containing numbers between 0 (Ridge penalty) and 1 (LASSO penalty), indicating the elastic
+#' @param alpha_x (1xk) A positive real vector containing numbers between 0 and 1, indicating the elastic
 #'  net parameter for data_x for association of order k.
-#' @param alpha_y (1xk) A positive real vector containing numbers between 0 (Ridge penalty) and 1 (LASSO penalty), indicating the elastic
+#' @param alpha_y (1xk) A positive real vector containing numbers between 0 and 1, indicating the elastic
 #'  net parameter for data_y for association of order k.
 #' @param k highest order of maximum association you want to retrieve
 #' @param tol desired accuracy for inner loop
@@ -29,15 +29,51 @@
 #'  corresponding to data_x.
 #' @returns b A (qxk) vector of the estimated linear combinations
 #'  corresponding to data_y.
-#' @returns `measure` A (1xk) vector of the estimated maximum associations
-#' @returns phi A (nxk) matrix of the estimated projections corresponding phi * data_x
-#' @returns eta A (nxk) matrix of the estimated projections corresponding eta * data_y
+#' @returns measure A (1xk) vector of the estimated maximum associations
+#' @returns phi A (nxk) matrix of the estimated projections corresponding a * data_x
+#' @returns eta A (nxk) matrix of the estimated projections corresponding b * data_y
 #' @returns pen_x A (1xk) vector of the optimal penalty parameters for data_x
 #' @returns pen_y A (1xk) vector of the optimal penalty parameters for data_y
 #' @returns alpha_x The value of the elastic net parameter alpha_x
 #' @returns alpha_y The value of the elastic net parameter alpha_y
 #' @returns summary A summary of the hyperparameter optimization
-#' @returns `method` The method used for computing the covariance matrix.
+#' @examples
+#'\dontrun{
+#' set.seed(123)
+#' library(mvtnorm) # only needed for simulated example
+#' p <- 10
+#' q <- 10
+#' n <- 100
+#'
+#' cov_xx <- matrix(0, ncol = p, nrow = p)
+#' cov_yy <- matrix(0, ncol = q, nrow = q)
+#' cov_xy <- matrix(0, nrow = p, ncol = q)
+#'
+#' diag(cov_xx) <- 1
+#' diag(cov_yy) <- 1
+#' cov_xy <- matrix(0, nrow = p, ncol = q)
+#' cov_xy[1, 1] <- 0.9
+#' cov_xy[2, 2] <- 0.7
+#'
+#' sigma <- rbind(
+#'   cbind(cov_xx, cov_xy),
+#'   cbind(Matrix::t(cov_xy), cov_yy)
+#' )
+#'
+#' data <- mvtnorm::rmvnorm(floor(n),
+#'                          mean = rep(0, p + q),
+#'                          sigma = sigma, checkSymmetry = F
+#' )
+#'
+#' x <-  as.matrix(data[, 1:p])
+#' y <-  as.matrix(data[, (p + 1):(p + q)])
+#' n_dir <- 2 # we want to derive the first two directions
+#' res <- ccaMM(x, y,
+#'                     k = n_dir,
+#'                     alpha_x = rep(0, n_dir),
+#'                     alpha_y = rep(0, n_dir))
+#' plot(res$a[,1], type = "l")
+#'}
 #' @export
 #' @importFrom stats cor
 #' @importFrom stats cov
@@ -63,7 +99,11 @@ ccaMM <- function(data_x, data_y,
 
   A <- matrix(NA, nrow = ncol(data_x), ncol = k)
   B <- matrix(NA, nrow = ncol(data_y), ncol = k)
-  U <- matrix(NA, nrow = 2 * k + 2, ncol = k)
+  u_k <- min(2*k + 2, 6)
+  U <- matrix(NA, nrow = u_k, ncol = k)
+
+  H <- array(NA, dim = c(ncol(data_x) + ncol(data_y),ncol(data_x) + ncol(data_y), k))
+  S <- array(NA, dim = c(ncol(data_x) + ncol(data_y),ncol(data_x) + ncol(data_y) -1, k))
 
   PHI <- matrix(NA, nrow = nrow(data_x), ncol = k)
   ETA <- matrix(NA, nrow = nrow(data_y), ncol = k)
@@ -72,17 +112,15 @@ ccaMM <- function(data_x, data_y,
   PEN_X <- rep(NA, k)
   PEN_Y <- rep(NA, k)
   SUMMARY <- list()
+  CONV <- list()
+  CONV_A <- list()
+  CONV_B <- list()
 
   p <- ncol(data_x)
   q <- ncol(data_y)
   n <- nrow(data_x)
 
   wt <- rep(NA, n)
-
-  if(any(is.na(penalties))){
-    penalties <- list(pen_x = rep(NA, k),
-                      pen_y = rep(NA, k))
-  }
 
   if (method == "Pearson") {
     C <- cov(cbind(data_x, data_y))
@@ -121,18 +159,7 @@ ccaMM <- function(data_x, data_y,
   }
 
   for (i in 1:k) {
-    if (is.na(alpha_x[i])){
-      alpha_x[i] <- 0
-    }
-    if (is.na(alpha_y[k])){
-      alpha_y[i] <- 0
-    }
-
-    if (alpha_x[i] == 0 & alpha_y[i] == 0){
-      penalties$pen_x[i] <- sqrt(ncol(data_x))
-      penalties$pen_y[i] <- sqrt(ncol(data_y))
-    }
-    if (any(is.na(penalties$pen_x[i]), is.na(penalties$pen_y[i]))) {
+    if (any(is.na(penalties))) {
       res_param <- bayesian_optimization_CCA(C, p, q, n,
         alpha_x,
         alpha_y,
@@ -164,20 +191,30 @@ ccaMM <- function(data_x, data_y,
 
     A[, i] <- res$best_a
     B[, i] <- res$best_b
-    U[1:(2 * i + 2), i] <- res$best_u
+    i_k <- min(2 * i + 2, u_k)
+    U[1:i_k, i] <- res$best_u
 
     PHI[, i] <- as.matrix(data_x) %*% as.matrix(res$best_a)
     ETA[, i] <- as.matrix(data_y) %*% as.matrix(res$best_b)
 
     CORR[i] <- res$best_measure
+    H[,,i] <- res$hessian
+    S[,,i] <- res$best_s
+    CONV[[i]] <- res$conv_list
+    CONV_A[[i]] <- na.omit(res$conv_a)
+    CONV_B[[i]] <- na.omit(res$conv_b)
   }
   return(structure(list(
     a = A, b = B, measure = as.numeric(CORR),
     u = U,
+    hessian = H,
+    s = S,
     phi = PHI, eta = ETA,
     pen_x = PEN_X, pen_y = PEN_Y,
     summary = SUMMARY,
-    method = method,
+    conv_list = CONV,
+    conv_a = CONV_A,
+    conv_b = CONV_B,
     cov = C,
     wt = wt,
     alpha_x = alpha_x, alpha_y = alpha_y
